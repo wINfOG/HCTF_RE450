@@ -1,25 +1,21 @@
-12450~
-12450~
-�ҽг¶������������ҳ��ģ��������Ұ�������������
-
+//////
+简介：
+高分逆向题目，原来这道题没那么难的，但是越出越不对劲，你们自己看吧。
+最初思路来源于BCTF的RE300码海寻踪，自己维护一个堆栈虚拟机，编码一套自己的字节码操作指令。
+参考资料：加密与解密虚拟机加密部分。
 ////////////////////////////////////////////////////////////////////
-��飺
-�߷�������Ŀ��ԭ�������û��ô�ѵģ�����Խ��Խ���Ծ��������Լ����ɡ�
-���˼·��Դ��BCTF��RE300�뺣Ѱ�٣��Լ�ά��һ����ջ�����������һ���Լ����ֽ������ָ�
-�ο����ϣ������������������ܲ��֡�
-////////////////////////////////////////////////////////////////////
-�ļ���
-C_easy_VMP,ʹ��c���Ա�д�����demon
-C_easy_VMP_2,����c++�ˣ���ԭ����switchcase��Ϊһ����ת����
-C_easy_VMP_3,�Ż����������������ˣ�ʹ�õ�����ʽ��
-C_easy_VMP_4,�����˸����ָ����������İ����ɰ���һ���޸ĵ�ʱ��С�ı������ˣ��ͱ��ˡ�
-C_easy_VMP_5,ָ����ɣ��ο�x86��
-��ɰ棺����һ��RE���Flag��������
+文件：
+C_easy_VMP,使用c语言编写的最简单demon
+C_easy_VMP_2,改用c++了，将原来的switchcase变为一个跳转表。
+C_easy_VMP_3,优化后将数据与操作混合了，使用单表形式。
+C_easy_VMP_4,添加了更多的指令。。。。第四版的完成版在一次修改的时候不小心被覆盖了，就别看了。
+C_easy_VMP_5,指令完成，参考x86。
+完成版：包含一个RE与多Flag生成器。
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
 
-�ֽ���ָ�
+字节码指令：
 	ControlTable[VM_X00_START] = 0x00;			
 	ControlTable[VM_PUSH]	   = &VM_Function::CODE_PUSH;
 
@@ -47,7 +43,7 @@ C_easy_VMP_5,ָ����ɣ��ο�x86��
 
 
 
-[VM_X00_START] û�õı�־����ʾһ���������ʼ��
+[VM_X00_START] 没用的标志，表示一个代码的起始。
 
 [VM_PUSH]	   
 enum Code_Push_Parameter
@@ -61,9 +57,9 @@ enum Code_Push_Parameter
 	PUSH_MEM_DWORD= 0x4
 
 };
-��ջ��PUSHһ�����ݣ�������Ϊ2Ԫ��3Ԫ��ʾ����
-1.VM_PUSH, PUSH_MEM | PUSH_MEM_BYTE,��ջһ����ַ��ȡ��ַ����ջ��
-2.VM_PUSH,PUSH_NUM,0x0,��ջ0
+向栈中PUSH一个数据，操作数为2元或3元，示例：
+1.VM_PUSH, PUSH_MEM | PUSH_MEM_BYTE,出栈一个地址，取地址，入栈。
+2.VM_PUSH,PUSH_NUM,0x0,入栈0
 
 [VM_POP]	
 enum Code_Pop_Parameter
@@ -75,86 +71,86 @@ enum Code_Pop_Parameter
 	POP_MEM_BYTE = 0x1,
 	POP_MEM_WORD = 0x2,
 	POP_MEM_DWORD= 0x4
-};ͬ�ϡ�
+};同上。
 
 [VM_ADD]	
-��ջ2�����ݣ����֮����ջ
+出栈2个数据，相加之后，入栈
 
 	  
 [VM_SUB]	  
-ͬ��
+同上
 
 
 [VM_XOR]	  
-ͬ��
+同上
 
 [VM_JMP]	  
-��Ԫ����
-��ջһ����ת����
+二元操作
+出栈一个跳转长度
 enum Code_JumpFun
 {
-	Jump_From_EIP = 0x10,	//��һ����ַΪ��ת����ַ
-	Jump_From_OEP = 0X20	//��ڵ�Ϊ��ת����ַ
+	Jump_From_EIP = 0x10,	//下一个地址为跳转基地址
+	Jump_From_OEP = 0X20	//入口点为跳转基地址
 };
-���磺
+例如：
 VM_PUSH,PUSH_NUM,0x0,
 VM_JMP,Jump_From_OEP,
-��ʾ������ͷ��
+表示调到开头。
 
 [VM_JZ]		  
-ͬ�ϣ�����Ҫ�ж�Z��־λ�Ƿ���ת��
+同上，不过要判断Z标志位是否跳转。
 
 
 [VM_CMP]	  
-�Ƚ�ջ����2��ֵ������Z��S flag��ͬx86
+比较栈顶的2个值，设置Z与S flag，同x86
 
 
 [VM_SHR] 
-��Ԫ��������һ������λ�����ٳ�һ����ֵ�����ƺ�Ż�ջ�С�
+二元操作，出一个右移位数，再出一个数值，右移后放回栈中。
 
 
 [VM_SHL] 
-ͬ�ϡ�
+同上。
 
 [VM_AND] 
-ͬXOR
+同XOR
 
 [VM_OR] 
-ͬXOR
+同XOR
 
 [VM_STRLEN_CALL]  
-��װstrlen
+封装strlen
 
 [VM_FAKE_CALL] 
-����һ���µ������ֽ��룬��ԭ�ֽ���ʹ�ò�ͬ�ļĴ�������ͬ��ջ��
+启用一段新的虚拟字节码，与原字节码使用不同的寄存器，相同的栈。
 
 
 [VM_EXIT_SUCCESS] 
-���سɹ���you got it��
+返回成功（you got it）
 
 
 [VM_EXIT_FAIL] 
-����ʧ�ܣ�Try again��
+返回失败（Try again）
 
 
 [VM_DEBUG_BREAK] 
-��Debugʱ����debug�ֽ����ָ�����ʾ��ջ��Ĵ�����
+在Debug时用于debug字节码的指令，会显示堆栈与寄存器。
 
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-������ʽ��
-1.����ָ�
-���磺
-		//����ָ��//
+混淆方式：
+1.垃圾指令。
+例如：
+		//垃圾指令//
 		VM_PUSH,0x1000,
 		VM_POP,0x1000,
-���ᱻ�ֽ��������ִ�л���ִ�к�û���κ������ָ�
+不会被字节码解释器执行或者执行后没有任何意义的指令。
 
-2.�ֽ����Խ���
-���磺
-		////��Ҫ���ܵĴ���//////////////
+2.字节码自解密
+例如：
+		////需要解密的代码//////////////
 		VM_X00_START ^ 0x28,
 		VM_PUSH ^ 0x28,
 		PUSH_NUM ^ 0x28,
@@ -167,13 +163,13 @@ VM_JMP,Jump_From_OEP,
 		Jump_From_EIP ^ 0x28,
 		0xFFFFAAAA,
 
-��δ���ȫ�������0x28��������ʱ�Խ���Ȼ�������С�
+这段代码全部亦或了0x28，在运行时自解谜然后再运行。
 
 
-3.����
-����������д�ˡ�
+3.乱序
+出题人懒得写了。
 
-4.ѭ��λ��
-���鷳������д�ˡ�
+4.循环位移
+好麻烦啊，不写了。
 
 /////////////////////////////////////////////////////////////////////////////////
